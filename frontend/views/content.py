@@ -205,9 +205,19 @@ class AddContentView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
             context = super().get_context_data(**kwargs)
             # Retrieves the form for content type
             content_type = self.kwargs['type']
+
+            text_initial = request.POST['textfield']
+            # calling the api
+            if 'md' in request.FILES:
+                md_code = request.FILES['md'].open().read().decode('utf-8')
+                text_initial = md_code
+            else:
+                md_code = request.POST['textfield']
+            context['preview'] = mark_safe(markdown.markdown(md_code))
+
             if 'content_type_form' not in context:
                 context['content_type_form'] = AddMD(
-                    initial={'textfield': request.POST['textfield'], 'source': request.POST['source']})
+                    initial={'textfield': text_initial, 'source': request.POST['source']})
 
             # Checks if content type is of type markdown
             context['is_markdown_content'] = content_type == 'MD'
@@ -220,14 +230,6 @@ class AddContentView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
 
             # Topic
             context['topic'] = Topic.objects.get(pk=self.kwargs['topic_id'])
-
-            # calling the api
-            if 'md' in request.FILES:
-                md_code = request.FILES['md'].open().read().decode('utf-8')
-
-            else:
-                md_code = request.POST['textfield']
-            context['preview'] = mark_safe(markdown.markdown(md_code))
 
             return render(request, 'frontend/content/add.html', context)
 
