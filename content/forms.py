@@ -207,13 +207,13 @@ class AddMD(forms.ModelForm):
                     'placeholder': get_placeholder(MDContent.TYPE, 'source')}),
             'textfield': forms.Textarea(
                 attrs={'placeholder': get_placeholder(MDContent.TYPE, 'textfield')}),
-            'md': ModifiedClearableFileInput(attrs={'accept': 'text/plain'})
+            'md': ModifiedClearableFileInput(attrs={'accept': 'text/markdown'})
         }
 
 class EditMD(forms.ModelForm):
-    """Add Markdown
+    """Edit Markdown
 
-    This model represents the add form for Markdown code.
+    This model represents the edit form for Markdown code, excluding the file field.
     """
 
     class Meta:
