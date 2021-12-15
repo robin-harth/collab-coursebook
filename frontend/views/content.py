@@ -494,13 +494,13 @@ class EditContentView(LoginRequiredMixin, UpdateView):
                 if content_type == 'Latex':
                     Validator.validate_latex(get_user(request),
                                              content,
-                                             content_type_data
+                                             content_type_data)
 
                 #If the content type is MD, compile an HTML version of it and store in DB
                 if content_type == 'MD':
                     Validator.validate_md(get_user(request),
-                                          content,
-                                          content_type_data)
+                                            content,
+                                            content_type_data)
 
                 # Generates preview image in 'uploads/contents/'
                 preview = CONTENT_TYPES.get(content_type) \
