@@ -37,6 +37,11 @@
             <h6>You may add either a markdown file to upload directly or input markdown script yourself. If you do both the uploaded file will be prioritized and the script discarded.</h6>
         {% endif %}
         {% bootstrap_form content_type_form %}
+        {% if is_markdown_content %}
+            <button id = "preview" hidden name ="preview" class="btn btn-dark btn-sm">
+                    {% trans 'Preview' %}
+            </button>
+        {% endif %}
         <br>
         {# Dynamic attachment for content types with attachments #}
         {% if attachment_allowed %}
@@ -90,5 +95,10 @@
     {# LaTeX embedded help for attachment #}
     {% if is_latex_content %}
         {% include 'frontend/content/attachment_embedding_help.html' %}
+    {% endif %}
+
+    {# Preview Template#}
+    {% if is_markdown_content %}
+        {% include 'frontend/content/preview_help.html' %}
     {% endif %}
 {% endblock %}

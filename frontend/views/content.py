@@ -2,6 +2,10 @@
 
 This file describes the frontend views related to content types.
 """
+
+from django.http import HttpResponse
+from django.utils.safestring import mark_safe
+from django.shortcuts import render
 import markdown
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -19,7 +23,7 @@ from base.utils import get_user
 
 from content.attachment.forms import ImageAttachmentFormSet
 from content.attachment.models import ImageAttachment, IMAGE_ATTACHMENT_TYPES
-from content.forms import CONTENT_TYPE_FORMS, EditMD
+from content.forms import CONTENT_TYPE_FORMS, EditMD, AddMD
 from content.models import CONTENT_TYPES
 
 from frontend.forms.comment import CommentForm
@@ -158,7 +162,7 @@ class AddContentView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
         # Checks if attachments are allowed for given content type
         context['attachment_allowed'] = content_type in IMAGE_ATTACHMENT_TYPES
 
-        # Checks if content type is of type Latex
+        # Checks if content type is of type markdown
         context['is_markdown_content'] = content_type == 'MD'
 
         # Checks if content type is of type Latex
@@ -196,6 +200,37 @@ class AddContentView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
         :return: the response after a post request
         :rtype: HttpResponseRedirect
         """
+        # preview function
+        if 'preview' in request.POST:
+            context = super().get_context_data(**kwargs)
+            # Retrieves the form for content type
+            content_type = self.kwargs['type']
+            if 'content_type_form' not in context:
+                context['content_type_form'] = AddMD(
+                    initial={'textfield': request.POST['textfield'], 'source': request.POST['source']})
+
+            # Checks if content type is of type markdown
+            context['is_markdown_content'] = content_type == 'MD'
+            if content_type == 'MD':
+                context['latex_tooltip'] = LATEX_EXAMPLE
+
+            # Retrieves parameters
+            course = Course.objects.get(pk=self.kwargs['course_id'])
+            context['course'] = course
+
+            # Topic
+            context['topic'] = Topic.objects.get(pk=self.kwargs['topic_id'])
+
+            # calling the api
+            if 'md' in request.FILES:
+                md_code = request.FILES['md'].open().read().decode('utf-8')
+
+            else:
+                md_code = request.POST['textfield']
+            context['preview'] = mark_safe(markdown.markdown(md_code))
+
+            return render(request, 'frontend/content/add.html', context)
+
         # Retrieves content type form
         if 'type' in self.kwargs:
             content_type = self.kwargs['type']
@@ -236,22 +271,21 @@ class AddContentView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
 
             # If the content type is LaTeX, compile the LaTeX Code and store in DB
             if content_type == 'Latex':
-                 Validator.validate_latex(get_user(request),
-                                            content,
-                                            content_type_data)
+                Validator.validate_latex(get_user(request),
+                                         content,
+                                         content_type_data)
 
-
-            #If the content type is MD store in DB
+            # If the content type is MD store in DB
             if content_type == 'MD':
                 nonempty = bool(content_type_data.md)
                 if not nonempty:
                     Validator.validate_md(get_user(request),
-                                            content,
-                                            content_type_data)
+                                          content,
+                                          content_type_data)
                 else:
                     Validator.validate_md_file(get_user(request),
-                                            content,
-                                            content_type_data)
+                                               content,
+                                               content_type_data)
             # Generates preview image in 'uploads/contents/'
             preview = CONTENT_TYPES.get(content_type).objects.get(pk=content.pk).generate_preview()
             content.preview.name = preview
@@ -373,7 +407,7 @@ class EditContentView(LoginRequiredMixin, UpdateView):
         if 'content_type_form' not in context:
             if content_type in CONTENT_TYPE_FORMS:
                 content_file = CONTENT_TYPES[content_type].objects.get(pk=self.get_object().pk)
-                #if content is MD and there exists an md file in DB for it get EditMD so the user can't edit the md file.
+                # if content is MD and there exists an md file in DB for it get EditMD so the user can't edit the md file.
                 if content.type == "MD":
                     if content.mdcontent.md:
                         context['content_type_form'] = \
@@ -464,14 +498,14 @@ class EditContentView(LoginRequiredMixin, UpdateView):
                                              content,
                                              content_type_data)
 
-                #TODO add check if md file upload is empty if empty create md and html from text
-                #if not empty create text and html from md
+                # TODO add check if md file upload is empty if empty create md and html from text
+                # if not empty create text and html from md
 
-                #If the content type is MD, compile an HTML version of it and store in DB
+                # If the content type is MD, compile an HTML version of it and store in DB
                 if content_type == 'MD':
                     Validator.validate_md(get_user(request),
-                                            content,
-                                            content_type_data)
+                                          content,
+                                          content_type_data)
 
                 # Generates preview image in 'uploads/contents/'
                 preview = CONTENT_TYPES.get(content_type) \
