@@ -221,8 +221,6 @@ class AddContentView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
 
             # Checks if content type is of type markdown
             context['is_markdown_content'] = content_type == 'MD'
-            if content_type == 'MD':
-                context['latex_tooltip'] = LATEX_EXAMPLE
 
             # Retrieves parameters
             course = Course.objects.get(pk=self.kwargs['course_id'])
