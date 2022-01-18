@@ -2,11 +2,14 @@
 
 This file describes the frontend views related to content types.
 """
+import re
+
 
 from django.http import HttpResponse
 from django.utils.safestring import mark_safe
 from django.shortcuts import render
 import markdown
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
@@ -92,6 +95,16 @@ def rate_content(request, course_id, topic_id, content_id, pk):  # pylint: disab
     return HttpResponseRedirect(
         reverse_lazy('frontend:content', args=(course_id, topic_id, content_id,))
         + '#rating')
+
+
+def md_to_html(text, content):
+    if content.ImageAttachments.count() > 0:
+        attachments = content.ImageAttachments.all()
+        for idx, attachment in enumerate(attachments):
+            text = re.sub(rf"!\[(.*?)]\(Image-{idx}\)",
+                          rf"![\1]({attachment.image.url})",
+                          text)
+    return markdown.markdown(text)
 
 
 class AddContentView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
@@ -275,14 +288,13 @@ class AddContentView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
                                          content,
                                          content_type_data)
 
-
-            #If the content type is MD store in DB, is_file checks if there is a md file so validator knows if it needs to create a md file or text
+            # If the content type is MD store in DB, is_file checks if there is a md file so validator knows if it needs to create a md file or text
             if content_type == 'MD':
                 is_file = bool(content_type_data.md)
                 Validator.validate_md(get_user(request),
-                                        content,
-                                        content_type_data,
-                                        is_file)
+                                      content,
+                                      content_type_data,
+                                      is_file)
 
             # Generates preview image in 'uploads/contents/'
             preview = CONTENT_TYPES.get(content_type).objects.get(pk=content.pk).generate_preview()
@@ -419,6 +431,8 @@ class EditContentView(LoginRequiredMixin, UpdateView):
 
         # Checks if content type is of type Latex
         context['is_latex_content'] = content_type == 'Latex'
+        # Checks if content type if of type MDContent
+        context['is_markdown_content'] = content_type == 'MD'
         if content_type == 'Latex':
             context['latex_tooltip'] = LATEX_EXAMPLE
 
@@ -496,11 +510,12 @@ class EditContentView(LoginRequiredMixin, UpdateView):
                                              content,
                                              content_type_data)
 
-                #If the content type is MD, compile an HTML version of it and store in DB
+                # If the content type is MD, compile an HTML version of it and store in DB
                 if content_type == 'MD':
                     Validator.validate_md(get_user(request),
                                             content,
-                                            content_type_data)
+                                            content_type_data,
+                                            False)
 
                 # Generates preview image in 'uploads/contents/'
                 preview = CONTENT_TYPES.get(content_type) \
@@ -638,9 +653,8 @@ class ContentView(DetailView):
                 context['markdown'] = html"""
 
         if content.type == "MD":
-            html = markdown.markdown(content.mdcontent.textfield, extensions=["tables"])
-            context['html'] = html
-
+            md_text = content.mdcontent.textfield
+            context['html'] = md_to_html(md_text,content)
         context['comment_form'] = CommentForm()
 
         context['comments'] = Comment.objects.filter(content=self.get_object()
@@ -851,7 +865,7 @@ class ContentReadingModeView(LoginRequiredMixin, DetailView):
                                 self.request.GET.get('f')
 
         if content.type == "MD":
-            html = markdown.markdown(content.mdcontent.textfield, extensions=["tables"])
-            context['html'] = html
+            md_text = content.mdcontent.textfield
+            context['html'] = md_to_html(md_text,content)
 
         return context
