@@ -4,6 +4,10 @@ This file describes the frontend views related to content types.
 """
 import re
 
+
+from django.http import HttpResponse
+from django.utils.safestring import mark_safe
+from django.shortcuts import render
 import markdown
 
 from django.contrib import messages
@@ -22,7 +26,7 @@ from base.utils import get_user
 
 from content.attachment.forms import ImageAttachmentFormSet
 from content.attachment.models import ImageAttachment, IMAGE_ATTACHMENT_TYPES
-from content.forms import CONTENT_TYPE_FORMS, EditMD
+from content.forms import CONTENT_TYPE_FORMS, EditMD, AddMD
 from content.models import CONTENT_TYPES
 
 from frontend.forms.comment import CommentForm
@@ -171,7 +175,7 @@ class AddContentView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
         # Checks if attachments are allowed for given content type
         context['attachment_allowed'] = content_type in IMAGE_ATTACHMENT_TYPES
 
-        # Checks if content type is of type Markdown
+        # Checks if content type is of type markdown
         context['is_markdown_content'] = content_type == 'MD'
 
         # Checks if content type is of type Latex
@@ -209,6 +213,37 @@ class AddContentView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
         :return: the response after a post request
         :rtype: HttpResponseRedirect
         """
+        # preview function
+        if 'preview' in request.POST:
+            context = super().get_context_data(**kwargs)
+            # Retrieves the form for content type
+            content_type = self.kwargs['type']
+
+            text_initial = request.POST['textfield']
+            # calling the api
+            if 'md' in request.FILES:
+                md_code = request.FILES['md'].open().read().decode('utf-8')
+                text_initial = md_code
+            else:
+                md_code = request.POST['textfield']
+            context['preview'] = mark_safe(markdown.markdown(md_code))
+
+            if 'content_type_form' not in context:
+                context['content_type_form'] = AddMD(
+                    initial={'textfield': text_initial, 'source': request.POST['source']})
+
+            # Checks if content type is of type markdown
+            context['is_markdown_content'] = content_type == 'MD'
+
+            # Retrieves parameters
+            course = Course.objects.get(pk=self.kwargs['course_id'])
+            context['course'] = course
+
+            # Topic
+            context['topic'] = Topic.objects.get(pk=self.kwargs['topic_id'])
+
+            return render(request, 'frontend/content/add.html', context)
+
         # Retrieves content type form
         if 'type' in self.kwargs:
             content_type = self.kwargs['type']
