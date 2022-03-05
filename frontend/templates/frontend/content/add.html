@@ -115,9 +115,20 @@
         Editor should always be initialized before buttons,
         because when buttons are initialized the text window will be detached from the document.
         {% endcomment %}
-        <script type="text/javascript">
+
+        {% if initials %}
+            <script type="text/javascript">
             $(function(){
-                args = {
+                const input = document.getElementById('id_md');
+                input.removeAttribute('required');
+                input.setAttribute("style", "display:none");
+                document.getElementById("preview_file").setAttribute("style", "display:none")
+            });
+            </script>
+        {% else %}
+            <script type="text/javascript">
+            $(function(){
+                    args = {
                   previewStyle: "vertical",
                   height: "450px",
                   initialEditType: "markdown",
@@ -127,7 +138,8 @@
                 initEditor(args);
                 initButtons();
             });
-        </script>
+            </script>
+        {% endif %}
         {# Preview Template#}
             {% if is_markdown_content %}
         {% include 'frontend/content/preview_help.html' %}

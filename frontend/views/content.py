@@ -4,7 +4,6 @@ This file describes the frontend views related to content types.
 """
 import re
 
-
 from django.http import HttpResponse
 from django.utils.safestring import mark_safe
 from django.shortcuts import render
@@ -225,17 +224,21 @@ class AddContentView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
             # Retrieves the form for content type
             content_type = self.kwargs['type']
 
-            # calling the api
+
             if 'md' in request.FILES:
                 md_code = request.FILES['md'].open().read().decode('utf-8')
                 text_initial = md_code
+
             else:
                 md_code = request.POST['textfield']
+                text_initial = md_code
+
             context['preview'] = mark_safe(markdown.markdown(md_code))
+            context['initials'] = text_initial
 
             if 'content_type_form' not in context:
                 context['content_type_form'] = AddMD(
-                    initial={'textfield': text_initial, 'source': request.POST['source']})
+                    initial={'options':'text','textfield': text_initial, 'source': request.POST['source']})
 
             # Checks if content type is of type markdown
             context['is_markdown_content'] = content_type == 'MD'
