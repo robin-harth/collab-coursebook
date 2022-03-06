@@ -32,6 +32,11 @@
     max-width: 100%
 }
 
+#markdown-attachment-list button:hover {
+    background-color: #efefef;
+    color: #333333;
+}
+
 
 
 
