@@ -41,7 +41,14 @@
             <span style="font-size: 100px">{% fa5_icon 'user' 'far' %}</span>
         {% endif %}
     </div>
-
+    <br>
+    <h3>
+       {% trans 'Preferences' %}
+    </h3>
+    <br>
+    <h4>
+        {% trans 'Language' %} : {{ user_preference_language  }}
+    </h4>
     <div style="clear: both;">
 
     {# Stared courses #}

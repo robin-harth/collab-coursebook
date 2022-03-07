@@ -10,6 +10,7 @@ from django.contrib import admin
 from .models import Category, Content, Comment, Course
 from .models import CourseStructureEntry, Favorite, Period, Profile
 from .models import Rating, Tag, Topic
+from .models.profile import UserPreference
 
 
 @admin.register(Course)
@@ -137,3 +138,17 @@ class TopicAdmin(admin.ModelAdmin):
 
     Represents the topic model in the admin panel.
     """
+
+
+@admin.register(UserPreference)
+class UserPreferenceAdmin(admin.ModelAdmin):
+    """Course admin
+
+    Represents the course model in the admin panel.
+
+    :attr CourseAdmin.list_display: Controls which fields are displayed
+    :type CourseAdmin.list_display: list[str]
+    :attr CourseAdmin.readonly_fields: Controls which fields are non-editable
+    :type CourseAdmin.readonly_fields: list[str]
+    """
+    list_display = ['user', 'language']
