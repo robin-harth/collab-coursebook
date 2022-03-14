@@ -19,6 +19,11 @@ const HELP_TEXT = gettext('You can only add valid attachments.')
                     + '<br>'
                     + gettext('Invalid attachments will be grayed out.');
 const EMPTY_TEXT = gettext('There are currently no attachments');
+const ATTACHMENT_TEXT = gettext('Attachment');
+// Allowed image extensions
+const ALLOWED_EXTENSIONS = ['png','jpeg','jpg'];
+
+
 
 /**
 * Adds a button to insert attachment with the given ID to ATTACHMENT_LIST
@@ -31,12 +36,13 @@ function appendAttachmentToList(id) {
     button.classList.add('list-group-item');
     button.classList.add('list-group-item-action');
     button.setAttribute('type', 'button');
+    button.setAttribute('style', 'margin-bottom: 1px');
     button.setAttribute('disabled','');
     // -1 is reserved for 'No attachments'
     if (id == -1)
         button.innerHTML = "There are currently no attachments."
     else {
-        button.innerHTML = gettext("Attachment ") + id;
+        button.innerHTML = ATTACHMENT_TEXT + ' ' + id;
         button.addEventListener('click', () => {
             editor.eventEmitter.emit('command', 'addImage', {imageUrl: 'Image-' + id, altText: ''});
         });
@@ -163,13 +169,24 @@ function revertAttachmentLinks(index) {
 }
 
 /**
- * Checks if a given <input> element currently has a file and if that file is an image, based
- * on its MIME type.
+* Returns the extension of a file name.
+* @param filename name of the file
+* @returns extension of the file
+*/
+function getExtension(filename) {
+    return filename.substring(filename.lastIndexOf('.')+1, filename.length) || filename;
+}
+
+/**
+ * Checks if a given <input> element currently has a file and if that file is an image with an allowed extension,
+ * based on its MIME type and ALLOWED_EXTENSIONS.
  * @param input HTMLInputElement
  * @return True if input has a file and that file is an image, False otherwise
  */
 function validateInput(input) {
-   return input.files.length && input.files[0]['type'].split('/')[0] === 'image';
+   return input.files.length
+        && input.files[0]['type'].split('/')[0] === 'image'
+        && ALLOWED_EXTENSIONS.includes(getExtension(input.files[0].name));
 }
 
 /**
@@ -199,6 +216,10 @@ function addAttachmentEvent(attachment, id) {
         if (URL_ARRAY[id] != null) {
             revertAttachmentLinks(id);
         }
+        // Change name of the attachment in the list
+        ATTACHMENT_LIST.children[id+2].innerHTML = ATTACHMENT_TEXT + ' ' + id;
+        if (this.files.length)
+            ATTACHMENT_LIST.children[id+2].innerHTML += ": " + this.files[0].name;
         // Generate new URL only when attachment is valid
         if (validateInput(this)) {
             generateNewAttachmentURLs(this,id);
@@ -228,8 +249,12 @@ function generateExistingAttachmentURLs() {
             if (attachment.length && attachment.parent().length && attachment.parent().parent().length) {
                 // Get existing URL from the "Currently" field of the attachment
                 let existingURL = $("a",attachment.parent().parent());
-                if (existingURL.length)
-                    URL_ARRAY[i] = existingURL.attr("href");
+                if (existingURL.length) {
+                    let url_string = existingURL.attr("href");
+                    URL_ARRAY[i] = url_string;
+                    // Update name of the attachment in the attachment list
+                    ATTACHMENT_LIST.children[i+2].innerHTML += ": " + url_string.split('\\').pop().split('/').pop();
+                }
                 // Add listener to react to changes
                 addAttachmentEvent(attachment,i);
                 // Enable buttons to insert images in editor
@@ -238,4 +263,3 @@ function generateExistingAttachmentURLs() {
         }
     }
 }
-
