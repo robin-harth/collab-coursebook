@@ -132,7 +132,7 @@ class Latex:
         :return: the error messages from the log
         :rtype: list[str]
         """
-        # Decode bytes to string and split the string by the delimiter '\n'
+        # Decode bytes to string and split the string by the delimiter '\n'.
         lines = lob.decode(Latex.encoding, errors='ignore').splitlines()
         found = []
         for line in lines:
