@@ -1,0 +1,80 @@
+{# Load the tag library #}
+{% load fontawesome_5 %}
+{% load static %}
+{% load i18n %}
+
+
+{# Load JavaScript #}
+<script type="text/javascript" src="{% static 'js/copy.js' %}"></script>
+
+{# Tooltip content #}
+<script type="text/html" id="latex-tooltip">
+    <a onclick="popupTooltip()" class="btn">
+        <p align="right">
+         <button id="preview_file" type="button" class="btn btn-info btn-sm position-relative" >
+                    {% trans 'Preview File' %}
+         </button>
+        </p>
+    </a>
+    <br>
+    {% if preview %}
+    <div id="overlay" class="form-group" style="display: block ">
+
+        <textfield
+                disabled
+                name="topic"
+                class="form-control"
+                style="height: 20%"
+                id="latex-tooltip-information">
+            <h6>
+                {% if preview %}
+                  {{preview}}
+                 {% endif %}
+            </h6>
+        </textfield>
+        <div id="closePreview" style="">
+        <a onclick="closePopupTooltip()" class="btn">
+            <button type="button" class="btn btn-danger btn-sm">
+                    {% trans 'Close Preview' %}
+            </button>
+        </a>
+        </div>
+    </div>
+    {% endif %}
+</script>
+
+<script type="text/javascript">
+    /**
+     * Shows or hides the popup tooltip depending its previous state. If it was unhidden,
+     * then it will be hidden after this calls and vice versa.
+     */
+
+    function popupTooltip() {
+        var hangoutButton = document.getElementById("preview");
+        hangoutButton.click();
+    }
+
+    function closePopupTooltip() {
+        const overlay = document.getElementById("overlay");
+        overlay.style.display =  "none";
+        const element = document.getElementById("closePreview");
+        element.style.display =  "none";
+    }
+    /**
+     * Registers the tooltip to the given id.
+     *
+     * @param id the id where the tooltip should be registered
+     * @param tooltip the tooltip to be registered
+     */
+    function registerTooltip(id, tooltip) {
+        document.getElementById(id).outerHTML =
+            tooltip +
+            document.getElementById(id).outerHTML
+    }
+
+    $(document).ready(function () {
+        // Register
+        const tooltip = document.getElementById("latex-tooltip")
+        registerTooltip("id_md", tooltip.textContent);
+    });
+</script>

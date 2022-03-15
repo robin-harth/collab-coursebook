@@ -2,7 +2,13 @@
 
 This file describes the frontend views related to content types.
 """
+import re
 
+from django.http import HttpResponse
+from django.utils.safestring import mark_safe
+from django.shortcuts import render
+import markdown
+import math
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -19,7 +25,7 @@ from base.utils import get_user
 
 from content.attachment.forms import ImageAttachmentFormSet, LatexPreviewImageAttachmentFormSet
 from content.attachment.models import ImageAttachment, IMAGE_ATTACHMENT_TYPES
-from content.forms import CONTENT_TYPE_FORMS, EditMD
+from content.forms import CONTENT_TYPE_FORMS, EditMD, AddMD
 from content.models import CONTENT_TYPES
 
 from frontend.forms.comment import CommentForm
@@ -93,6 +99,16 @@ def rate_content(request, course_id, topic_id, content_id, pk):  # pylint: disab
     return HttpResponseRedirect(
         reverse_lazy('frontend:content', args=(course_id, topic_id, content_id,))
         + '#rating')
+
+
+def md_to_html(text, content):
+    if content.ImageAttachments.count() > 0:
+        attachments = content.ImageAttachments.all()
+        for idx, attachment in enumerate(attachments):
+            text = re.sub(rf"!\[(.*?)]\(Image-{idx}\)",
+                          rf"![\1]({attachment.image.url})",
+                          text)
+    return markdown.markdown(text)
 
 
 class AddContentView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
@@ -211,6 +227,40 @@ class AddContentView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
                                  Topic.objects.get(pk=self.kwargs['topic_id']),
                                  LatexPreviewImageAttachmentFormSet(request.POST, request.FILES))
 
+        # preview function
+        if 'preview' in request.POST:
+            context = super().get_context_data(**kwargs)
+            # Retrieves the form for content type
+            content_type = self.kwargs['type']
+
+
+            if 'md' in request.FILES:
+                md_code = request.FILES['md'].open().read().decode('utf-8')
+                text_initial = md_code
+
+            else:
+                md_code = request.POST['textfield']
+                text_initial = md_code
+
+            context['preview'] = mark_safe(markdown.markdown(md_code))
+            context['initials'] = text_initial
+
+            if 'content_type_form' not in context:
+                context['content_type_form'] = AddMD(
+                    initial={'options':'text','textfield': text_initial, 'source': request.POST['source']})
+
+            # Checks if content type is of type markdown
+            context['is_markdown_content'] = content_type == 'MD'
+
+            # Retrieves parameters
+            course = Course.objects.get(pk=self.kwargs['course_id'])
+            context['course'] = course
+
+            # Topic
+            context['topic'] = Topic.objects.get(pk=self.kwargs['topic_id'])
+
+            return render(request, 'frontend/content/add.html', context)
+
         # Retrieves content type form
         if 'type' in self.kwargs:
             content_type = self.kwargs['type']
@@ -228,6 +278,7 @@ class AddContentView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
 
         # Checks if content forms are valid
         if add_content_form.is_valid() and content_type_form.is_valid():
+
             # Saves author etc.
             content = add_content_form.save(commit=False)
             content.author = get_user(self.request)
@@ -252,6 +303,14 @@ class AddContentView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
 
             content_type_data.content = content
             content_type_data.save()
+
+            # Checks if attachments are allowed for the given content type
+            if content_type in IMAGE_ATTACHMENT_TYPES:
+                # Validates attachments
+                redirect = Validator.validate_attachment(content,
+                                                         image_formset)
+                if redirect is not None:
+                    return redirect
 
             # If the content type is LaTeX, compile the LaTeX Code and store in DB
             if content_type == 'Latex':
@@ -477,10 +536,14 @@ class EditContentView(LoginRequiredMixin, UpdateView):
             if form.is_valid() and content_type_form.is_valid():
                 content = form.save(commit=False)
                 content_type = content.type
+                content_type_data = content_type_form.save()
+
                 # Checks if attachments are allowed for the given content type
                 if content_type in IMAGE_ATTACHMENT_TYPES:
+
                     # Removes images from database
                     clean_attachment(content, image_formset)
+
                     # Validates attachments
                     if image_formset.is_valid():
                         content.save()
