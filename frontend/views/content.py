@@ -27,16 +27,15 @@ from content.attachment.forms import ImageAttachmentFormSet, LatexPreviewImageAt
 from content.attachment.models import ImageAttachment, IMAGE_ATTACHMENT_TYPES
 from content.forms import CONTENT_TYPE_FORMS, EditMD, AddMD
 from content.models import CONTENT_TYPES
+from content.static.yt_api import timestamp_to_seconds
 
 from frontend.forms.comment import CommentForm
 from frontend.forms.content import AddContentForm, EditContentForm, TranslateForm
 from frontend.templatetags.cc_frontend_tags import js_escape
 from frontend.views.history import Reversion
 from frontend.views.validator import Validator
+
 from export.helper_functions import Markdown
-
-
-from content.static.yt_api import *
 from export.views import latex_preview
 
 
@@ -708,11 +707,11 @@ class ContentView(DetailView):
             context['html'] = Markdown.render(content, False)
 
         if content.type == 'YouTubeVideo':
-            context['startTime'] = content.ytvideocontent.startTime
-            context['endTime'] = content.ytvideocontent.endTime
+            context['startTime'] = content.ytvideocontent.start_time
+            context['endTime'] = content.ytvideocontent.end_time
 
-            context['startSeconds'] = timestamp_to_seconds(content.ytvideocontent.startTime)
-            context['endSeconds'] = timestamp_to_seconds(content.ytvideocontent.endTime)
+            context['startSeconds'] = timestamp_to_seconds(content.ytvideocontent.start_time)
+            context['endSeconds'] = timestamp_to_seconds(content.ytvideocontent.end_time)
 
         context['comment_form'] = CommentForm()
 

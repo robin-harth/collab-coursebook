@@ -4,11 +4,11 @@ This file contains forms associated with the content types.
 """
 
 from django import forms
+from django.utils.translation import gettext_lazy as _
 
 from content.models import MDContent, YTVideoContent, ImageContent, PDFContent
 from content.models import TextField, Latex
 from content.widgets import ModifiedClearableFileInput
-from django.utils.translation import gettext_lazy as _
 
 # str: Relative directory path of the forms examples
 FORMS_EXAMPLES_DIRECTORY = 'content/templates/form/examples/'
@@ -64,12 +64,12 @@ class AddContentFormYoutubeVideo(forms.ModelForm):
         :type Meta.fields: str or list[str]
         """
         model = YTVideoContent
-        fields = ['url', 'startTime', 'endTime']
+        fields = ['url', 'start_time', 'end_time']
         widgets = {
-            'startTime': forms.TextInput(
+            'start_time': forms.TextInput(
                 attrs={
                     'placeholder': _("Default: 0:00")}),
-            'endTime': forms.TextInput(
+            'end_time': forms.TextInput(
                 attrs={
                     'placeholder': _("Default: 0:00")})
         }
@@ -228,12 +228,13 @@ class AddMD(forms.ModelForm):
 
     def clean(self):
         cleaned_data = self.cleaned_data
-        if 'options' in cleaned_data and (cleaned_data['options'] == 'file'
-                                          or cleaned_data['options'] == 'text'):
+        if 'options' in cleaned_data \
+                and (cleaned_data['options'] == 'file' or cleaned_data['options'] == 'text'):
             options = cleaned_data['options']
             if options == 'file' and not ('md' in cleaned_data and bool(self.cleaned_data['md'])):
                 raise forms.ValidationError(_("You must upload a Markdown file."))
-            elif options == 'text' and not ('textfield' in cleaned_data and bool(self.cleaned_data['textfield'])):
+            if options == 'text' \
+                    and not ('textfield' in cleaned_data and bool(self.cleaned_data['textfield'])):
                 raise forms.ValidationError(_("You must put in some text."))
         else:
             raise forms.ValidationError(_("None of the options were chosen."))

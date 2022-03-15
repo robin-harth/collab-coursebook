@@ -16,20 +16,22 @@ def pdf_compile(request, pk, exp_all,  # pylint: disable=invalid-name
                 context=None):
     """Generate course book
 
-    There is also a flag which indicates if the whole course or only the coursebook should be exported.
+    There is also a flag which indicates if the whole
+    course or only the coursebook should be exported.
 
     :param request: The given request
     :type request: WSGIRequest
     :param pk: The primary key of the course
     :type pk: int
-    :param exp_all: Indicator if the whole course (T) or the coursebook (F)should b eexported
+    :param exp_all: Indicator if the whole course (T) or the coursebook (F)should be
+                    exported
     :type exp_all: bool
     :param template: The path of the LaTeX template to use
     :type template: str
     :param context: The context of the content
     :type context: dict[str, Any]
-
-    :return: the generated coursebook as PDF, PDF LaTeX output and as an rendered template
+    :return: the generated coursebook as PDF, PDF LaTeX output and as an rendered
+            template
     :rtype: tuple[bytes, tuple[bytes, bytes], str]
     """
 
@@ -58,20 +60,22 @@ def pdf_compile(request, pk, exp_all,  # pylint: disable=invalid-name
         ]
 
     # Perform compilation given context and template
-    (pdf, pdflatex_output, tex_template) = Latex.render(context, template, [])
+    (pdf, pdflatex_output, tex_template) = Latex.render(context, template)
     return pdf, pdflatex_output, tex_template
 
 
 def generate_coursebook_response(request, pk, exp_all, file_name=None):  # pylint: disable=invalid-name
     """Generate coursebook response
 
-    There is also a flag which indicates if the whole course or only the coursebook should be exported.
+    There is also a flag which indicates if
+    the whole course or only the coursebook should be exported.
 
     :param request: The given request
     :type request: WSGIRequest
     :param pk: The primary key of the course
     :type pk: int
-    :param exp_all: Indicator if the whole course (T) or the coursebook (F) should be exported
+    :param exp_all: Indicator if the whole course (T) or the coursebook (F) should
+                    be exported
     :type exp_all: bool
     :param file_name: The name of the file
     :type file_name: str
@@ -89,7 +93,7 @@ def generate_coursebook_response(request, pk, exp_all, file_name=None):  # pylin
     (pdf, pdflatex_output, tex_template) = pdf_compile(request, pk, exp_all)
     return write_response(request, pdf, pdflatex_output, tex_template, file_name + ".pdf")
 
-
+# pylint: disable=too-many-arguments
 def write_response(request, pdf, pdflatex_output, tex_template, filename,
                    content_type='application/pdf'):
     """Write response
@@ -151,11 +155,12 @@ def generate_pdf_from_latex(user, content, template="content/export/base.tex", c
 
     # Performs compilation given context and template
     # pdf = pdf, pdflatex_output, tex_template
-    pdf = Latex.render(context, template, [])
+    pdf = Latex.render(context, template)
     return pdf[0]
 
 
-def latex_preview(request, user, topic, formset, template="content/export/base.tex", content_type='application/pdf'):
+def latex_preview(request, user, topic, formset,
+                  content_type='application/pdf'):
     """Latex preview
     Returns a HttpResponse containing the compiled pdf, if the request is successful or
     a message indicating why compiling failed.
@@ -189,6 +194,6 @@ def latex_preview(request, user, topic, formset, template="content/export/base.t
         context = {'preview_data': latex, 'image_formset': formset,
                    'export_pdf': False, 'user': user, 'topic': topic,
                    'contents': []}
-        pdf, _, _ = Latex.render(context, template, [])
+        pdf, _, _ = Latex.render(context, "content/export/base.tex")
         return HttpResponse(pdf, content_type=content_type, reason=reasons[0])
     return HttpResponse(reason=reasons[3])
