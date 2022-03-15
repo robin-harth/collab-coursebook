@@ -53,8 +53,6 @@ class AddContentFormYoutubeVideo(forms.ModelForm):
     This model represents the add form for YouTube videos.
     """
 
-    option = forms.BooleanField(label=_("Advanced Options"), required=False)
-
     class Meta:
         """Meta options
 
@@ -66,7 +64,15 @@ class AddContentFormYoutubeVideo(forms.ModelForm):
         :type Meta.fields: str or list[str]
         """
         model = YTVideoContent
-        fields = ['url', 'option', 'startTime', 'endTime']
+        fields = ['url', 'startTime', 'endTime']
+        widgets = {
+            'startTime': forms.TextInput(
+                attrs={
+                    'placeholder': _("Default: 0:00")}),
+            'endTime': forms.TextInput(
+                attrs={
+                    'placeholder': _("Default: 0:00")})
+        }
 
 
 class AddContentFormImage(forms.ModelForm):
@@ -189,8 +195,8 @@ class AddMD(forms.ModelForm):
     This model represents the add form for Markdown code.
     """
     CHOICES = [
-        ('file', _('Upload as file')),
-        ('text', _('Upload as text')),
+        ('file', _('Upload an existing Markdown file')),
+        ('text', _('Write Markdown with editor')),
     ]
     options = forms.ChoiceField(choices=CHOICES, widget=forms.RadioSelect, initial='file')
 

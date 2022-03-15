@@ -13,6 +13,8 @@ from base.models import Content
 
 from content.models import BaseSourceModel, Latex, TextField, MDContent
 
+from django.conf import settings
+from django.core.validators import validate_image_file_extension, FileExtensionValidator
 
 class ImageAttachment(BaseSourceModel):
     """image attachment
@@ -41,7 +43,11 @@ class ImageAttachment(BaseSourceModel):
                                 related_name='ImageAttachments',
                                 on_delete=models.CASCADE)
     image = models.ImageField(verbose_name=_("Image"),
-                              upload_to='uploads/contents/%Y/%m/%d/')
+                              upload_to='uploads/contents/%Y/%m/%d/',
+                              validators=
+                              [FileExtensionValidator(settings.ALLOWED_IMAGE_EXTENSIONS)],
+                              help_text=_("Allowed extensions are: ")
+                                        + ", ".join(settings.ALLOWED_IMAGE_EXTENSIONS) + ".")
 
     class Meta:
         """Meta options

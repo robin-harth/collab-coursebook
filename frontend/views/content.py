@@ -13,8 +13,7 @@ import math
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.core.files.base import ContentFile
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
@@ -24,7 +23,7 @@ from django.views.generic import DetailView, CreateView, DeleteView, UpdateView
 from base.models import Content, Comment, Course, Topic, Favorite
 from base.utils import get_user
 
-from content.attachment.forms import ImageAttachmentFormSet
+from content.attachment.forms import ImageAttachmentFormSet, LatexPreviewImageAttachmentFormSet
 from content.attachment.models import ImageAttachment, IMAGE_ATTACHMENT_TYPES
 from content.forms import CONTENT_TYPE_FORMS, EditMD, AddMD
 from content.models import CONTENT_TYPES
@@ -34,8 +33,11 @@ from frontend.forms.content import AddContentForm, EditContentForm, TranslateFor
 from frontend.templatetags.cc_frontend_tags import js_escape
 from frontend.views.history import Reversion
 from frontend.views.validator import Validator
+from export.helper_functions import Markdown
+
 
 from content.static.yt_api import *
+from export.views import latex_preview
 
 
 def clean_attachment(content, image_formset):
@@ -196,6 +198,8 @@ class AddContentView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
         # Topic
         context['topic'] = Topic.objects.get(pk=self.kwargs['topic_id'])
 
+        context['is_add_form'] = True
+
         # Setup formset
         if 'item_forms' not in context:
             formset = ImageAttachmentFormSet(queryset=ImageAttachment.objects.none())
@@ -218,6 +222,11 @@ class AddContentView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
         :return: the response after a post request
         :rtype: HttpResponseRedirect
         """
+        if 'latex-preview' in request.POST and request.is_ajax():
+            return latex_preview(request, get_user(request),
+                                 Topic.objects.get(pk=self.kwargs['topic_id']),
+                                 LatexPreviewImageAttachmentFormSet(request.POST, request.FILES))
+
         # preview function
         if 'preview' in request.POST:
             context = super().get_context_data(**kwargs)
@@ -276,7 +285,19 @@ class AddContentView(SuccessMessageMixin, LoginRequiredMixin, CreateView):
             topic_id = self.kwargs['topic_id']
             content.topic = Topic.objects.get(pk=topic_id)
             content.type = content_type
-            content.save()
+
+            # Checks if attachments are allowed for the given content type
+            if content_type in IMAGE_ATTACHMENT_TYPES:
+                if image_formset.is_valid():
+                    content.save()
+                    redirect = Validator.validate_attachment(content, image_formset)
+                else:
+                    return self.render_to_response(
+                            self.get_context_data(form=add_content_form,
+                                                  content_type_form=content_type_form,
+                                                  item_forms=image_formset))
+            else:
+                content.save()
             # Evaluates generic form
             content_type_data = content_type_form.save(commit=False)
 
@@ -448,6 +469,9 @@ class EditContentView(LoginRequiredMixin, UpdateView):
         context['is_yt_content'] = content_type == 'YouTubeVideo'
         if content_type == 'Latex':
             context['latex_tooltip'] = LATEX_EXAMPLE
+            context['latex_initial_pdf'] = content.latex.pdf.url
+
+        context['is_add_form'] = False
 
         if content_type in IMAGE_ATTACHMENT_TYPES and 'item_forms' not in context:
 
@@ -478,6 +502,11 @@ class EditContentView(LoginRequiredMixin, UpdateView):
         :return: the response after a post request
         :rtype: HttpResponseRedirect
         """
+        if 'latex-preview' in request.POST and request.is_ajax():
+            return latex_preview(request, get_user(request),
+                                 Topic.objects.get(pk=self.kwargs['topic_id']),
+                                 LatexPreviewImageAttachmentFormSet(request.POST, request.FILES))
+
         self.object = self.get_object()
         form = self.get_form()
 
@@ -505,7 +534,7 @@ class EditContentView(LoginRequiredMixin, UpdateView):
 
             # Check form validity and update both forms/associated models
             if form.is_valid() and content_type_form.is_valid():
-                content = form.save()
+                content = form.save(commit=False)
                 content_type = content.type
                 content_type_data = content_type_form.save()
 
@@ -516,11 +545,17 @@ class EditContentView(LoginRequiredMixin, UpdateView):
                     clean_attachment(content, image_formset)
 
                     # Validates attachments
-                    redirect = Validator.validate_attachment(content,
-                                                             image_formset)
-                    if redirect is not None:
-                        return redirect
-
+                    if image_formset.is_valid():
+                        content.save()
+                        redirect = Validator.validate_attachment(content, image_formset)
+                    else:
+                        return self.render_to_response(
+                            self.get_context_data(form=form,
+                                                  content_type_form=content_type_form,
+                                                  item_forms=image_formset))
+                else:
+                    content.save()
+                content_type_data = content_type_form.save()
                 # If the content type is LaTeX, compile the LaTeX Code and store in DB
                 if content_type == 'Latex':
                     Validator.validate_latex(get_user(request),
@@ -670,21 +705,14 @@ class ContentView(DetailView):
                 context['markdown'] = html"""
 
         if content.type == "MD":
-            md_text = content.mdcontent.textfield
-            context['html'] = md_to_html(md_text, content)
+            context['html'] = Markdown.render(content, False)
 
         if content.type == 'YouTubeVideo':
-            seconds_total = content.ytvideocontent.startTime
-            context['start_hours'], context['start_minutes'], context['start_seconds'] = seconds_to_time(seconds_total)
+            context['startTime'] = content.ytvideocontent.startTime
+            context['endTime'] = content.ytvideocontent.endTime
 
-            seconds_total = content.ytvideocontent.endTime
-            if (seconds_total == 0):
-                context['end_hours'], context['end_minutes'], context['end_seconds'] = seconds_to_time(
-                    get_video_length(content.ytvideocontent.id))
-            else:
-                context['end_hours'], context['end_minutes'], context['end_seconds'] = seconds_to_time(seconds_total)
-
-            context['length'] = get_video_length(content.ytvideocontent.id)
+            context['startSeconds'] = timestamp_to_seconds(content.ytvideocontent.startTime)
+            context['endSeconds'] = timestamp_to_seconds(content.ytvideocontent.endTime)
 
         context['comment_form'] = CommentForm()
 
@@ -896,7 +924,6 @@ class ContentReadingModeView(LoginRequiredMixin, DetailView):
                                 self.request.GET.get('f')
 
         if content.type == "MD":
-            md_text = content.mdcontent.textfield
-            context['html'] = md_to_html(md_text, content)
+            context['html'] = Markdown.render(content, False)
 
         return context

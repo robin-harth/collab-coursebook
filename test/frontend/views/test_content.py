@@ -95,11 +95,10 @@ class AddContentViewTestCase(MediaTestCase):
         self.post_redirects_to_content(path, data)
         self.assertEqual(model.MDContent.objects.count(), 1)
         content = model.MDContent.objects.first()
-        self.assertTrue((bool)(content.md))
+        self.assertTrue(bool(content.md))
         self.assertEqual(content.source, "src")
         self.assertEqual(content.textfield, "test text")
         self.assertEqual(content.textfield,content.md.open().read().decode('utf-8'))
-
 
     def test_add_md_file(self):
         """POST test case - add Markdown
@@ -123,7 +122,7 @@ class AddContentViewTestCase(MediaTestCase):
         self.post_redirects_to_content(path, data)
         self.assertEqual(model.MDContent.objects.count(), 1)
         content = model.MDContent.objects.first()
-        self.assertTrue((bool)(content.md))
+        self.assertTrue(bool(content.md))
         self.assertTrue(content.md.name,"test_file")
         self.assertEqual(content.source, "src")
         self.assertEqual(content.textfield, "test text")
@@ -154,7 +153,7 @@ class AddContentViewTestCase(MediaTestCase):
         self.post_redirects_to_content(path, data)
         self.assertEqual(model.MDContent.objects.count(), 1)
         content = model.MDContent.objects.first()
-        self.assertTrue((bool)(content.md))
+        self.assertTrue(bool(content.md))
         self.assertTrue(content.md.name,"test_file")
         self.assertEqual(content.source, "src")
         self.assertEqual(content.textfield, "A")
@@ -166,8 +165,8 @@ class AddContentViewTestCase(MediaTestCase):
         Tests the function post that:
         a Markdown content gets created by text when both file and text are inputted and the option "Upload by text"
         is chosen.
-        The content should then be saved properly after sending a POST request to content-add and that the POST request redirects to
-        the content page.
+        The content should then be saved properly after sending a POST request to content-add and that the POST request
+        redirects to the content page.
         """
         path = reverse('frontend:content-add', kwargs={
             'course_id': 1, 'topic_id': 1, 'type': 'MD'
@@ -185,7 +184,7 @@ class AddContentViewTestCase(MediaTestCase):
         self.post_redirects_to_content(path, data)
         self.assertEqual(model.MDContent.objects.count(), 1)
         content = model.MDContent.objects.first()
-        self.assertTrue((bool)(content.md))
+        self.assertTrue(bool(content.md))
         self.assertEqual(content.source, "src")
         self.assertEqual(content.textfield, "B")
         self.assertEqual(content.textfield, content.md.open().read().decode('utf-8'))
@@ -225,8 +224,8 @@ class AddContentViewTestCase(MediaTestCase):
         data = {
             'language': 'de',
             'url': 'https://www.youtube.com/watch?v=9xwazD5SyVg',
-            'startTime': '0',
-            'endTime': '0',
+            'startTime': '0:00',
+            'endTime': '0:00',
             'form-TOTAL_FORMS': '0',
             'form-INITIAL_FORMS': '0'
         }
@@ -248,8 +247,8 @@ class AddContentViewTestCase(MediaTestCase):
         data = {
             'language': 'de',
             'url': 'https://www.youtube.com/watch?v=9xwazD5SyVg',
-            'startTime': '1',
-            'endTime': '5',
+            'startTime': '0:01',
+            'endTime': '0:05',
             'form-TOTAL_FORMS': '0',
             'form-INITIAL_FORMS': '0'
         }
@@ -257,8 +256,8 @@ class AddContentViewTestCase(MediaTestCase):
         self.assertEqual(model.YTVideoContent.objects.count(), 1)
         content = model.YTVideoContent.objects.first()
         self.assertEqual(content.url, "https://www.youtube.com/watch?v=9xwazD5SyVg")
-        self.assertEqual(content.startTime, 1)
-        self.assertEqual(content.endTime, 5)
+        self.assertEqual(content.startTime, "0:01")
+        self.assertEqual(content.endTime, "0:05")
 
     def test_add_yt_wrong_times(self):
         """POST test case - add YouTube Video
@@ -273,8 +272,8 @@ class AddContentViewTestCase(MediaTestCase):
         data = {
             'language': 'de',
             'url': 'https://www.youtube.com/watch?v=9xwazD5SyVg',
-            'startTime': '5',
-            'endTime': '1',
+            'startTime': '0:05',
+            'endTime': '0:01',
             'form-TOTAL_FORMS': '0',
             'form-INITIAL_FORMS': '0'
         }
@@ -295,8 +294,8 @@ class AddContentViewTestCase(MediaTestCase):
         data = {
             'language': 'de',
             'url': 'https://www.youtube.com/watch?v=9xwazD5SyVg',
-            'startTime': '5',
-            'endTime': '5',
+            'startTime': '0:05',
+            'endTime': '0:05',
             'form-TOTAL_FORMS': '0',
             'form-INITIAL_FORMS': '0'
         }
@@ -317,11 +316,48 @@ class AddContentViewTestCase(MediaTestCase):
         data = {
             'language': 'de',
             'url': 'https://www.youtube.com/watch?v=9xwazD5SyVg',
-            'startTime': '7',
-            'endTime': '20',
+            'startTime': '0:07',
+            'endTime': '0:20',
             'form-TOTAL_FORMS': '0',
             'form-INITIAL_FORMS': '0'
         }
+        response = self.client.post(path, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(model.YTVideoContent.objects.count(), 0)
+
+    def test_add_yt_wrong_timestamps(self):
+        """POST test case - add YouTube Video
+
+        Tests the function post that a YouTube Video with correct timestamps gets created and saved properly after sending
+        a POST request to content-add and that the POST request redirects to
+        the content page.
+        """
+        path = reverse('frontend:content-add', kwargs={
+            'course_id': 1, 'topic_id': 1, 'type': 'YouTubeVideo'
+        })
+        data = {
+            'language': 'de',
+            'url': 'https://www.youtube.com/watch?v=9xwazD5SyVg',
+            'startTime': '0:7',
+            'endTime': '0:00',
+            'form-TOTAL_FORMS': '0',
+            'form-INITIAL_FORMS': '0'
+        }
+        response = self.client.post(path, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(model.YTVideoContent.objects.count(), 0)
+
+        data['startTime'] = "13:00:10"
+        response = self.client.post(path, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(model.YTVideoContent.objects.count(), 0)
+
+        data['startTime'] = "10"
+        response = self.client.post(path, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(model.YTVideoContent.objects.count(), 0)
+
+        data['startTime'] = "0h0m0s"
         response = self.client.post(path, data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(model.YTVideoContent.objects.count(), 0)
@@ -348,6 +384,118 @@ class AddContentViewTestCase(MediaTestCase):
         content = model.Latex.objects.get(pk=2)
         self.assertEqual(content.textfield, '\\textbf{Test}')
         self.assertTrue(bool(content.pdf))
+
+    def test_latex_preview_success(self):
+        """POST test case - LaTeX preview - success
+
+        Tests that the POST preview request is sent and processed correctly, returning
+        an appropriating response indicating that the request was successful.
+        """
+        path = reverse('frontend:content-add', kwargs={
+            'course_id': 1, 'topic_id': 1, 'type': 'Latex'
+        })
+        old_objects_count = model.Latex.objects.count()
+        old_attachments_count = ImageAttachment.objects.count()
+        data = {
+            'textfield': 'Lorem ipsum',
+            'form-TOTAL_FORMS': '0',
+            'form-INITIAL_FORMS': '0',
+            'form-0-image': utils.generate_image_file(0),
+            'latex-preview': True,
+        }
+        # Last parameter is used to make the request an ajax request
+        response = self.client.post(path, data, **{'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.reason_phrase, 'OK')
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertEqual(model.Latex.objects.count(), old_objects_count)
+        self.assertEqual(ImageAttachment.objects.count(), old_attachments_count)
+
+    def test_latex_preview_invalid_request(self):
+        """POST test case LaTeX preview - failure
+
+         Tests that the POST preview request is sent and rejected because the request was
+         invalid, returning an appropriating response with the corresponding
+         reason.
+         """
+        path = reverse('frontend:content-add', kwargs={
+            'course_id': 1, 'topic_id': 1, 'type': 'Latex'
+        })
+        old_objects_count = model.Latex.objects.count()
+        old_attachments_count = ImageAttachment.objects.count()
+        data = {
+            'form-TOTAL_FORMS': '0',
+            'form-INITIAL_FORMS': '0',
+            'latex-preview': True,
+        }
+        # Last parameter is used to make the request an ajax request
+        response = self.client.post(path, data, **{'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.reason_phrase, 'Invalid data')
+        self.assertEqual(response['Content-Type'], 'text/html; charset=utf-8')
+        self.assertEqual(model.Latex.objects.count(), old_objects_count)
+        self.assertEqual(ImageAttachment.objects.count(), old_attachments_count)
+
+    def test_latex_preview_fail_text(self):
+        """POST test case LaTeX preview - failure
+
+        Tests that the POST preview request is sent and rejected because no LaTeX code
+        was sent in the request, returning an appropriating response with the corresponding
+        reason.
+        """
+        path = reverse('frontend:content-add', kwargs={
+            'course_id': 1, 'topic_id': 1, 'type': 'Latex'
+        })
+        old_objects_count = model.Latex.objects.count()
+        old_attachments_count = ImageAttachment.objects.count()
+        data = {
+            'textfield': '',
+            'form-TOTAL_FORMS': '0',
+            'form-INITIAL_FORMS': '0',
+            'latex-preview': True,
+        }
+        # Last parameter is used to make the request an ajax request
+        response = self.client.post(path, data, **{'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.reason_phrase, 'Textfield is empty')
+        self.assertEqual(response['Content-Type'], 'text/html; charset=utf-8')
+        self.assertEqual(model.Latex.objects.count(), old_objects_count)
+        self.assertEqual(ImageAttachment.objects.count(), old_attachments_count)
+
+    def test_latex_preview_fail_invalid_attachments(self):
+        """POST test case LaTeX preview - failure
+
+        Tests that the POST preview request is sent and rejected because of one of the following reasons:
+        1. At least one of the attachments is not an image
+        2. At least one of the attachments was empty
+        An appropriating response with the corresponding reason message will then be sent back.
+        """
+        path = reverse('frontend:content-add', kwargs={
+            'course_id': 1, 'topic_id': 1, 'type': 'Latex'
+        })
+        old_objects_count = model.Latex.objects.count()
+        old_attachments_count = ImageAttachment.objects.count()
+        test_file = SimpleUploadedFile("test_file.md", b"A")
+        data = [{
+            'textfield': 'Test invalid image extension',
+            'form-TOTAL_FORMS': '1',
+            'form-INITIAL_FORMS': '0',
+            'form-0-image': test_file,
+            'latex-preview': True,
+        }, {
+            'textfield': 'Test empty form in formset',
+            'form-TOTAL_FORMS': '1',
+            'form-INITIAL_FORMS': '0',
+            'latex-preview': True,
+        }]
+        # Last parameter is used to make the request an ajax request
+        for i in range(0, len(data)):
+            response = self.client.post(path, data[i], **{'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.reason_phrase, 'Invalid attachment data')
+            self.assertEqual(response['Content-Type'], 'text/html; charset=utf-8')
+            self.assertEqual(model.Latex.objects.count(), old_objects_count)
+            self.assertEqual(ImageAttachment.objects.count(), old_attachments_count)
 
     def test_add_attachments(self):
         """POST test case - add attachments
@@ -381,6 +529,28 @@ class AddContentViewTestCase(MediaTestCase):
         self.assertEqual(content.ImageAttachments.count(), 2)
         for image_attachment in content.ImageAttachments.all():
             self.assertTrue(bool(image_attachment.image))
+
+    def test_add_empty_attachment(self):
+        """POST test case - add empty attachment
+
+        Tests the function post that an empty image attachment does not get added.
+        """
+        path = reverse('frontend:content-add', kwargs={
+            'course_id': 1, 'topic_id': 1, 'type': 'Textfield'
+        })
+        data = {
+            'language': 'de',
+            'textfield': 'Lorem ipsum',
+            'source': 'src',
+            'form-0-source': '',
+            'form-0-image': '',
+            'form-TOTAL_FORMS': '1',
+            'form-INITIAL_FORMS': '0'
+        }
+        response = self.client.post(path, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(model.TextField.objects.count(), 0)
+        self.assertEqual(ImageAttachment.objects.count(), 0)
 
     def test_get(self):
         """GET test case

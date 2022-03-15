@@ -94,8 +94,10 @@
     {% endif %}
 
     {# LaTeX embedded help for attachment #}
+    {# Preview LaTeX #}
     {% if is_latex_content %}
         {% include 'frontend/content/attachment_embedding_help.html' %}
+        {% include 'frontend/content/latex_preview.html' %}
     {% endif %}
 
 {% endblock %}
