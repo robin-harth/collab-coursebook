@@ -5,15 +5,13 @@ This file describes the frontend views related to profiles.
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.http import HttpResponseRedirect
 from django.urls import reverse_lazy
 from django.views.generic import DetailView, UpdateView
 from django.utils.translation import gettext_lazy as _
 
 from base.models import Profile
-from base.models.profile import UserPreference
 
-from frontend.forms.profile import AddProfile, AddPreference
+from frontend.forms.profile import AddProfile
 
 
 class ProfileView(LoginRequiredMixin, DetailView):
@@ -31,29 +29,6 @@ class ProfileView(LoginRequiredMixin, DetailView):
     model = Profile
     template_name = "frontend/profile/profile.html"
     context_object_name = "profile"
-
-    def get_context_data(self, **kwargs):
-        """Context data
-
-        Gets the context data of the view which can be accessed in
-        the html templates.
-
-        :param kwargs: The additional arguments
-        :type kwargs: dict[str, Any]
-
-        :return: the context data
-        :rtype: dict[str, Any]
-        """
-        context = super().get_context_data(**kwargs)
-        content = self.get_object()
-        context['user'] = self.request.user
-        try:
-            content_file = UserPreference.objects.get(user=context['profile'])
-        except:
-            content_file = UserPreference.objects.create(user=context['profile'])
-        #context['user_preference_form'] = AddPreference(initial={'language': content_file.language})
-        context['user_preference_language'] = 'German' if (content_file.language == 'de') else 'English'
-        return context
 
 
 class ProfileEditView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -107,40 +82,3 @@ class ProfileEditView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
         :rtype: Profile
         """
         return Profile.objects.get(user=self.request.user)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        context['user'] = self.request.user
-        try:
-            content_file = UserPreference.objects.get(user=context['profile'])
-        except:
-            content_file = UserPreference.objects.create(user=context['profile'])
-        context['user_preference_form'] = AddPreference(initial={'language': content_file.language})
-
-        return context
-
-    def post(self, request, *args, **kwargs):
-        """Post
-
-        Defines the action after a post request.
-
-        :param request: The given request
-        :type request: HttpRequest
-        :param args: The arguments
-        :type args: Any
-        :param kwargs: The keyword arguments
-        :type kwargs: dict[str, Any]
-
-        :return: the response after a post request
-        :rtype: HttpResponseRedirect
-        """
-        self.object = self.get_object()
-        form = self.get_form()
-        if form.is_valid():
-            form.save()
-        UserPreference.objects.filter(user=request.user.profile).update(language=request.POST['language'])
-
-
-        # Redirect to error page (should not happen for valid content types)
-        return HttpResponseRedirect(self.get_success_url())

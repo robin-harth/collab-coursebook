@@ -9,8 +9,6 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 
-from collab_coursebook import settings
-
 
 class Profile(models.Model):
     """Profile
@@ -28,7 +26,6 @@ class Profile(models.Model):
     :attr Profile.stared_courses: The courses that the user favoured
     :type Profile.stared_courses: ManyToManyField - Course
     """
-
     class Meta:
         """Meta options
 
@@ -94,37 +91,3 @@ def save_user_profile(sender, instance, **kwargs):
     """
     profile = Profile.objects.get(user=instance)
     profile.save()
-
-
-class UserPreference(models.Model):
-
-    user = models.ForeignKey("Profile",
-                             verbose_name=_("User"),
-                             on_delete=models.CASCADE,
-                             related_name="user_preferences")
-    language = models.CharField(verbose_name=_("Language"),
-                                max_length=30,
-                                choices=settings.LANGUAGES)
-
-    class Meta:
-        """Meta options
-
-        This class handles all possible meta options that you can give to this model.
-
-        :attr Meta.verbose_name: A human-readable name for the object in singular
-        :type Meta.verbose_name: __proxy__
-        :attr Meta.verbose_name_plural: A human-readable name for the object in plural
-        :type Meta.verbose_name_plural: __proxy__
-        """
-        verbose_name = _("User Preference")
-        verbose_name_plural = _("User Preferences")
-
-    def __str__(self):
-        """String representation
-
-        Returns the string representation of this object.
-
-        :return: the string representation of this object
-        :rtype: str
-        """
-        return f"{self.user} preferences)"

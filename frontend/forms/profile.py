@@ -6,10 +6,8 @@ This file describes the frontend views related to profiles.
 from django import forms
 
 from base.models import Profile
-from base.models.profile import UserPreference
 
 from content.widgets import ModifiedClearableFileInput
-from collab_coursebook import settings
 
 
 class AddProfile(forms.ModelForm):
@@ -36,12 +34,3 @@ class AddProfile(forms.ModelForm):
             'bio': forms.Textarea(attrs={'style': 'height: 100px'}),
             'pic': ModifiedClearableFileInput(attrs={'required': 'true'}),
         }
-
-
-class AddPreference(forms.ModelForm):
-    language = forms.CharField(required=False, widget=forms.Select(choices=settings.LANGUAGES))
-
-    class Meta:
-        model = UserPreference
-        fields = ['language']
-

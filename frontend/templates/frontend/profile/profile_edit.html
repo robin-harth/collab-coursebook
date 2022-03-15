@@ -16,10 +16,6 @@
     <form method="POST" class="post-form" enctype=multipart/form-data>
         {% csrf_token %}
         {% bootstrap_form form %}
-
-        {% csrf_token %}
-
-        {% bootstrap_form user_preference_form %}
         {% buttons %}
 
             <a href="{% url 'frontend:profile' pk=user.pk %}" class="btn btn-primary">
@@ -29,7 +25,5 @@
                 {% fa5_icon "check" 'fas' %} {% trans 'Submit' %}
             </button>
         {% endbuttons %}
-
     </form>
-
 {% endblock %}
